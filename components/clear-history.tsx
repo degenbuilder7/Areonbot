@@ -20,14 +20,10 @@ import {
 import { IconSpinner } from '@/components/ui/icons'
 
 interface ClearHistoryProps {
-  isEnabled: boolean
   clearChats: () => ServerActionResult<void>
 }
 
-export function ClearHistory({
-  isEnabled = false,
-  clearChats
-}: ClearHistoryProps) {
+export function ClearHistory({ clearChats }: ClearHistoryProps) {
   const [open, setOpen] = React.useState(false)
   const [isPending, startTransition] = React.useTransition()
   const router = useRouter()
@@ -35,7 +31,7 @@ export function ClearHistory({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" disabled={!isEnabled || isPending}>
+        <Button variant="ghost" disabled={isPending}>
           {isPending && <IconSpinner className="mr-2" />}
           Clear history
         </Button>
@@ -54,16 +50,16 @@ export function ClearHistory({
             disabled={isPending}
             onClick={event => {
               event.preventDefault()
-              startTransition(() => {
-                clearChats().then(result => {
-                  if (result && 'error' in result) {
-                    toast.error(result.error)
-                    return
-                  }
+              startTransition(async () => {
+                const result = await clearChats()
 
-                  setOpen(false)
-                  router.push('/')
-                })
+                if (result && 'error' in result) {
+                  toast.error(result.error)
+                  return
+                }
+
+                setOpen(false)
+                router.push('/')
               })
             }}
           >

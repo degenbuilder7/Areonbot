@@ -1,32 +1,29 @@
+import { Metadata } from 'next'
+
 import { Toaster } from 'react-hot-toast'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
+import { Analytics } from '@vercel/analytics/react'
 
 import '@/app/globals.css'
+import { fontMono, fontSans } from '@/lib/fonts'
 import { cn } from '@/lib/utils'
 import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 
-export const metadata = {
-  metadataBase: new URL(`https://${process.env.VERCEL_URL}`),
+export const metadata: Metadata = {
+  metadataBase: new URL('https://deployonareon.ai'),
   title: {
-    default: 'Next.js AI Chatbot',
-    template: `%s - Next.js AI Chatbot`
+    default: 'Areon BOT',
+    template: `AreonBOT`
   },
-  description: 'An AI-powered chatbot template built with Next.js and Vercel.',
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png'
-  }
-}
-
-export const viewport = {
+  description: 'Deploy your smart contracts with ease using AI.',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: 'white' },
     { media: '(prefers-color-scheme: dark)', color: 'black' }
-  ]
+  ],
+  icons: {
+    icon: '/favicon.ico',
+  }
 }
 
 interface RootLayoutProps {
@@ -36,24 +33,23 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head />
       <body
         className={cn(
           'font-sans antialiased',
-          GeistSans.variable,
-          GeistMono.variable
+          fontSans.variable,
+          fontMono.variable
         )}
       >
         <Toaster />
-        <Providers
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <Providers attribute="class" defaultTheme="system" enableSystem>
           <div className="flex flex-col min-h-screen">
             <Header />
-            <main className="flex flex-col flex-1 bg-muted/50">{children}</main>
+            <main className="flex flex-col flex-1 bg-muted/50">
+              {children}
+            </main>
           </div>
+          <Analytics />
           <TailwindIndicator />
         </Providers>
       </body>

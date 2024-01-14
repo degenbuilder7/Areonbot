@@ -1,5 +1,6 @@
 import NextAuth, { type DefaultSession } from 'next-auth'
 import GitHub from 'next-auth/providers/github'
+import { storeUser } from '@/app/actions'
 
 declare module 'next-auth' {
   interface Session {
@@ -12,28 +13,28 @@ declare module 'next-auth' {
 
 export const {
   handlers: { GET, POST },
-  auth
+  auth,
+  CSRF_experimental
 } = NextAuth({
   providers: [GitHub],
   callbacks: {
-    jwt({ token, profile }) {
+    async jwt({ token, profile }) {
       if (profile) {
         token.id = profile.id
-        token.image = profile.avatar_url || profile.picture
+        token.image = profile.picture
+        const user = {
+          ...profile, // First spread the rest of the profile properties
+          id: String(profile.id),  // Convert to string
+        };
+        await storeUser(user);
       }
-      return token
+      return token;
     },
-    session: ({ session, token }) => {
-      if (session?.user && token?.id) {
-        session.user.id = String(token.id)
-      }
-      return session
-    },
-    authorized({ auth }) {
-      return !!auth?.user // this ensures there is a logged in user for -every- request
-    }
+    // authorized({ auth }) {
+    //   return !!auth?.user
+    // }
   },
   pages: {
-    signIn: '/sign-in' // overrides the next-auth default signin page https://authjs.dev/guides/basics/pages
+    signIn: '/sign-in'
   }
 })

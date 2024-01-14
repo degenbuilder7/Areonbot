@@ -1,65 +1,143 @@
 'use client'
 
-import { useChat, type Message } from 'ai/react'
+import { ChatRequest, FunctionCallHandler } from "ai";
+import { useChat, type Message } from "ai/react";
+import toast from 'react-hot-toast'
 
 import { cn } from '@/lib/utils'
 import { ChatList } from '@/components/chat-list'
 import { ChatPanel } from '@/components/chat-panel'
 import { EmptyScreen } from '@/components/empty-screen'
 import { ChatScrollAnchor } from '@/components/chat-scroll-anchor'
-import { useLocalStorage } from '@/lib/hooks/use-local-storage'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { useState } from 'react'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { toast } from 'react-hot-toast'
-import { usePathname, useRouter } from 'next/navigation'
+import { nanoid } from '@/lib/utils'
+import { functionSchemas } from "@/lib/functions/schemas";
+import { useEffect, useState } from "react";
+import { createPublicClient, http } from "viem";
+import { VerifyContractParams } from "@/lib/functions/types";
 
-const IS_PREVIEW = process.env.VERCEL_ENV === 'preview'
 export interface ChatProps extends React.ComponentProps<'div'> {
   initialMessages?: Message[]
   id?: string
 }
 
+
 export function Chat({ id, initialMessages, className }: ChatProps) {
-  const router = useRouter()
-  const path = usePathname()
-  const [previewToken, setPreviewToken] = useLocalStorage<string | null>(
-    'ai-token',
-    null
-  )
-  const [previewTokenDialog, setPreviewTokenDialog] = useState(IS_PREVIEW)
-  const [previewTokenInput, setPreviewTokenInput] = useState(previewToken ?? '')
+  const [verificationParams, setVerificationParams] = useState<VerifyContractParams>()
+  const [polling, setPolling] = useState(false)
+
+  useEffect(() => {
+    const verifyFunction = async (verificationParams: VerifyContractParams) => {
+      if (verificationParams) {
+        const publicClient = createPublicClient({
+          chain: verificationParams?.viemChain,
+          transport: http(verificationParams?.viemChain?.rpcUrls?.default?.http[0])
+        })
+        try {
+          console.log("waiting for 4 confirmations")
+          const transactionReceipt = await publicClient.waitForTransactionReceipt(
+            { hash: verificationParams?.deployHash, confirmations: 4 }
+          )
+          console.log("got 4 confirmations, verifying contract")
+          if (transactionReceipt) {
+            const verifyResponse = await fetch(
+              '/api/verify-contract',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(verificationParams)
+              })
+            if (verifyResponse.ok) {
+              setPolling(false)
+            }
+          }
+        } catch (e) {
+          console.log('Verification failed, may need more confirmations.', e)
+        }
+      }
+    }
+
+    if (polling && verificationParams) {
+      const interval = setInterval(() => {
+        verifyFunction(verificationParams)
+      }, 10000)
+      return () => clearInterval(interval)
+    }
+  }, [polling, verificationParams])
+
+
+
+  const functionCallHandler: FunctionCallHandler = async (
+    chatMessages,
+    functionCall
+  ) => {
+    if (functionCall.name === 'deploy_contract') {
+      // You now have access to the parsed arguments here (assuming the JSON was valid)
+      // If JSON is invalid, return an appropriate message to the model so that it may retry?
+
+      const response = await fetch(
+        '/api/deploy-contract',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: functionCall.arguments
+        })
+
+      let content: string;
+      let role: 'system' | 'function';
+
+      if (response.ok) {
+        const { explorerUrl, ipfsUrl, verificationParams } = await response.json()
+        setVerificationParams(verificationParams)
+        setPolling(true)
+        content = JSON.stringify({ explorerUrl, ipfsUrl }) + '\n\n' + 'Your contract will be automativally verified after 4 block confirmations. Keep this tab open.'
+        role = 'function'
+
+      } else {
+        const { error } = await response?.json() ?? {}
+        content = JSON.stringify({ error }) + '\n\n' + 'Try to fix the error and show the user the updated code.'
+        role = 'system'
+      }
+
+      const functionResponse: ChatRequest = {
+        messages: [
+          ...chatMessages,
+          {
+            id: nanoid(),
+            name: 'deploy_contract',
+            role: role,
+            content: content,
+          }
+        ],
+        functions: functionSchemas
+      }
+
+      return functionResponse
+
+    }
+  }
+
   const { messages, append, reload, stop, isLoading, input, setInput } =
     useChat({
+      experimental_onFunctionCall: functionCallHandler,
       initialMessages,
       id,
       body: {
-        id,
-        previewToken
+        id
       },
       onResponse(response) {
         if (response.status === 401) {
           toast.error(response.statusText)
-        }
-      },
-      onFinish() {
-        if (!path.includes('chat')) {
-          window.history.pushState({}, '', `/chat/${id}`)
         }
       }
     })
   return (
     <>
       <div className={cn('pb-[200px] pt-4 md:pt-10', className)}>
-        {messages.length ? (
+        {messages.length > 1 ? (
           <>
             <ChatList messages={messages} />
             <ChatScrollAnchor trackVisibility={isLoading} />
@@ -78,42 +156,6 @@ export function Chat({ id, initialMessages, className }: ChatProps) {
         input={input}
         setInput={setInput}
       />
-
-      <Dialog open={previewTokenDialog} onOpenChange={setPreviewTokenDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Enter your OpenAI Key</DialogTitle>
-            <DialogDescription>
-              If you have not obtained your OpenAI API key, you can do so by{' '}
-              <a
-                href="https://platform.openai.com/signup/"
-                className="underline"
-              >
-                signing up
-              </a>{' '}
-              on the OpenAI website. This is only necessary for preview
-              environments so that the open source community can test the app.
-              The token will be saved to your browser&apos;s local storage under
-              the name <code className="font-mono">ai-token</code>.
-            </DialogDescription>
-          </DialogHeader>
-          <Input
-            value={previewTokenInput}
-            placeholder="OpenAI API key"
-            onChange={e => setPreviewTokenInput(e.target.value)}
-          />
-          <DialogFooter className="items-center">
-            <Button
-              onClick={() => {
-                setPreviewToken(previewTokenInput)
-                setPreviewTokenDialog(false)
-              }}
-            >
-              Save Token
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 }

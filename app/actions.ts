@@ -7,6 +7,18 @@ import { kv } from '@vercel/kv'
 import { auth } from '@/auth'
 import { type Chat } from '@/lib/types'
 
+// Store a new user's details
+export async function storeUser(user: { id: string } & Record<string, any>) {
+  // Assuming user has an 'id' field
+  const userKey = `user:details:${user.id}`;
+
+  // Save user details
+  await kv.hmset(userKey, user);
+
+  // Add user's ID to the list of all users
+  await kv.sadd('users:list', user.id);
+}
+
 export async function getChats(userId?: string | null) {
   if (!userId) {
     return []
@@ -100,20 +112,12 @@ export async function getSharedChat(id: string) {
   return chat
 }
 
-export async function shareChat(id: string) {
+export async function shareChat(chat: Chat) {
   const session = await auth()
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session.user.id !== chat.userId) {
     return {
       error: 'Unauthorized'
-    }
-  }
-
-  const chat = await kv.hgetall<Chat>(`chat:${id}`)
-
-  if (!chat || chat.userId !== session.user.id) {
-    return {
-      error: 'Something went wrong'
     }
   }
 

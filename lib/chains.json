@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Areon",
+    "chain": "AREON",
+    "icon": "areon",
+    "rpc": [
+      "https://mainnet-rpc.areon.network",
+      "wss://mainnet-ws.areon.network"
+    ],
+    "features": [
+      {
+        "name": "EIP155"
+      },
+      {
+        "name": "EIP1559"
+      }
+    ],
+    "faucets": [],
+    "nativeCurrency": {
+      "name": "Area",
+      "symbol": "AREA",
+      "decimals": 18
+    },
+    "infoURL": "https://areonscan.com",
+    "shortName": "areon",
+    "chainId": 463,
+    "networkId": 463,
+    "slip44": 60,
+    "ens": {
+      "registry": ""
+    },
+    "explorers": [
+      {
+        "name": "areonscan",
+        "url": "https://areonscan.com",
+        "standard": "EIP3091"
+      }
+    ]
+  },
+  {
+    "name": "Areon Testnet",
+    "title": "Areon Testnet",
+    "chain": "AREON",
+    "rpc": [
+      "https://testnet-rpc2.areon.network",
+      "wss://testnet-ws.areon.network",
+      "https://testnet-rpc2.areon.network"
+    ],
+    "faucets": [
+      "http://fauceth.komputing.org?chain=5&address=${ADDRESS}",
+      "https://goerli-faucet.slock.it?address=${ADDRESS}",
+      "https://faucet.goerli.mudit.blog"
+    ],
+    "nativeCurrency": {
+      "name": "Test Area",
+      "symbol": "TAREA",
+      "decimals": 18
+    },
+    "infoURL": "https://goerli.net/#about",
+    "shortName": "gor",
+    "chainId": 462,
+    "networkId": 462,
+    "ens": {
+      "registry": ""
+    },
+    "explorers": [
+      {
+        "name": "areonscan",
+        "url": "https://areonscan.com",
+        "standard": "EIP3091"
+      }
+    ]
+  }
+]
