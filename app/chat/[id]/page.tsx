@@ -24,9 +24,9 @@ export async function generateMetadata({
   }
 
   const chat = await getChat(params.id, session.user.id)
-  return {
-    title: chat?.title.toString().slice(0, 50) ?? 'Chat'
-  }
+    return {
+      title: chat?.title.toString().slice(0, 50) ?? 'Chat'
+    }
 }
 
 export default async function ChatPage({ params }: ChatPageProps) {
@@ -37,6 +37,8 @@ export default async function ChatPage({ params }: ChatPageProps) {
   }
 
   const chat = await getChat(params.id, session.user.id)
+  
+  console.log(chat,"chat",session.user.id,"sessionid");
 
   if (!chat) {
     notFound()

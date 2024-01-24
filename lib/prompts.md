@@ -13,6 +13,6 @@ Write me an ARC721 smart contract called Bazuki
 Use this as the baseURI:
 https://ikzttp.mypinata.cloud/ipfs/QmQFkLSQysj94s5GvTHPyzTxrawwtjgiiYS2TBLgrvw8CW
 
-I want it to have 10000 supply and make it free for anyone to mint.  Whena. user Mints they should get 10 random azukis with tokenURI's incrementing from the base URI
+I want it to have 10000 supply and make it free for anyone to mint.  When a user Mints they should get 10 random azukis with tokenURI's incrementing from the base URI
 
 make it free to mint and allow 10000 tokens.  When a usr calls mint give them 10 NFTs

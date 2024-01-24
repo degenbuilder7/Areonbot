@@ -12,9 +12,9 @@ export async function POST(req: Request) {
   const { messages, functions, function_call } = json
   const userId = (await auth())?.user.id
 
-  // if (!userId) {
-  //   return new Response('Unauthorized', { status: 401 })
-  // }
+  if (!userId) {
+    return new Response('Unauthorized', { status: 401 })
+  }
 
   const configuration = new Configuration({
     apiKey: process.env.OPENAI_API_KEY
